@@ -35,6 +35,7 @@ import nltk
 
 RANDOM_SEED=42
 np.random.seed(RANDOM_SEED)
+
 DB_PATH = './enwiki-20170820.db'
 nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')

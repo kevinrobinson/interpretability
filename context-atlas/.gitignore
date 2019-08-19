@@ -10,3 +10,6 @@ static/
 .vscode
 .cache
 static
+
+# too big for source
+enwiki-20170820.db
