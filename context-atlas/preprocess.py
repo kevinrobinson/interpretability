@@ -32,9 +32,12 @@ import json
 from tqdm import tqdm
 import nltk
 
-DB_PATH = '../enwiki-20170820.db'
-nltk.download('averaged_perceptron_tagger')
 
+RANDOM_SEED=42
+np.random.seed(RANDOM_SEED)
+DB_PATH = './enwiki-20170820.db'
+nltk.download('averaged_perceptron_tagger')
+nltk.download('punkt')
 
 def neighbors(word, sentences):
   """Get the info and (umap-projected) embeddings about a word."""
@@ -47,13 +50,14 @@ def neighbors(word, sentences):
   # Use UMAP to project down to 3 dimnsions.
   points_transformed = project_umap(points)
 
-  return {'labels': sent_data, 'data': points_transformed}
+  return {'labels': sent_data, 'data': points_transformed, 'points': points}
 
 def project_umap(points):
   """Project the words (by layer) into 3 dimensions using umap."""
   points_transformed = []
   for layer in points:
-    transformed = umap.UMAP().fit_transform(layer).tolist()
+    reducer = umap.UMAP(random_state=RANDOM_SEED)
+    transformed = reducer.fit_transform(layer).tolist()
     points_transformed.append(transformed)
   return points_transformed
 
@@ -133,7 +137,7 @@ def get_sentences():
   """Returns a bunch of sentences from wikipedia"""
   print('Selecting sentences from wikipedia...')
 
-  select = 'select * from articles limit 5000000'
+  select = 'select * from articles limit 100'
   docs, _ = get_query(select)
   docs = [doc[3] for doc in docs]
   doc = ' '.join(docs)
