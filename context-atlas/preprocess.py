@@ -51,23 +51,41 @@ def neighbors(word, sentences):
   # Use UMAP to project down to 3 dimnsions.
   points_transformed = project_umap(points)
 
-  return {'labels': sent_data, 'data': points_transformed, 'points': points}
+  # across seeds
+  # seeds = range(0, 20)
+  # umaps = (project_umap(points, seed=seed) for seed in seeds)
 
-def project_umap(points):
+  # return {
+  #   'labels': sent_data,
+  #   'data': points_transformed,
+    # 'points': points.tolist(),
+    # 'seeds': seeds.tolist(),
+    # 'umaps': umaps.tolist()
+  # }
+
+  return {
+    'labels': sent_data,
+    'data': points_transformed,
+    'points':points.tolist()
+  }
+
+def project_umap(points, seed=RANDOM_SEED):
   """Project the words (by layer) into 3 dimensions using umap."""
+
+  print('Projecting to umap with seed %d'%seed)
   points_transformed = []
   for layer in points:
-    reducer = umap.UMAP(random_state=RANDOM_SEED)
+    reducer = umap.UMAP(random_state=seed)
     transformed = reducer.fit_transform(layer).tolist()
     points_transformed.append(transformed)
   return points_transformed
 
-def get_embeddings(word, sentences):
+def get_embeddings(word, sentences, layers_back=12):
   """Get the embedding for a word in each sentence."""
   # Tokenized input
-  layers = range(-12, 0)
+  layers = range(-1 * layers_back, 0)
   points = [[] for layer in layers]
-  print('Getting embeddings for %d sentences '%len(sentences))
+  print('Getting embeddings for %d sentences'%len(sentences))
   for sentence in sentences:
     sentence = '[CLS] ' + sentence + ' [SEP]'
     tokenized_text = tokenizer.tokenize(sentence)
@@ -138,7 +156,7 @@ def get_sentences():
   """Returns a bunch of sentences from wikipedia"""
   print('Selecting sentences from wikipedia...')
 
-  select = 'select * from articles limit 100'
+  select = 'select * from articles limit 100000'
   docs, _ = get_query(select)
   docs = [doc[3] for doc in docs]
   doc = ' '.join(docs)
@@ -169,6 +187,12 @@ def get_poses(word, sentences):
 
   return sent_data
 
+def get_words():
+  """Define which words to include in the analysis."""
+  # with open('static/words.json') as f:
+  #   words = json.load(f)
+  # return words
+  return ['die', 'lie', 'fair'] # from paper
 
 if __name__ == '__main__':
 
@@ -182,25 +206,30 @@ if __name__ == '__main__':
   model.eval()
   model = model.to(device)
 
-  # Get selection of sentences from wikipedia.
-  with open('static/words.json') as f:
-    words = json.load(f)
+  # Determine what words to analyze
+  words = get_words()
+  print("Focusing analysis on %d words"%len(words))
 
+  # Get selection of sentences from wikipedia.
   sentences = get_sentences()
+  print("Analyzing %d sentences"%len(sentences))
 
   for word in tqdm(words):
     # Filter out sentences that don't have the word.
     sentences_w_word = [t for t in sentences if ' ' + word + ' ' in t]
 
-    # Take at most 200 sentences.
+    # Take at most n sentences.
     sentences_w_word = sentences_w_word[:1000]
 
-    # And don't show anything if there are less than 100 sentences.
+    # And don't show anything if there are less than n sentences.
     if (len(sentences_w_word) > 100):
       print('starting process for word : %s'%word)
       locs_and_data = neighbors(word, sentences_w_word)
       with open('static/jsons/%s.json'%word, 'w') as outfile:
         json.dump(locs_and_data, outfile)
+
+  print("Found %d sentences_w_word"%len(sentences_w_word))
+  print(sentences_w_word)
 
   # Store an updated json with the filtered words.
   filtered_words = []
@@ -208,6 +237,7 @@ if __name__ == '__main__':
     word = word.split('.')[0]
     filtered_words.append(word)
 
+  print("Wrote preprocessed files for %d filtered_words"%len(filtered_words))
   with open('static/filtered_words.json', 'w') as outfile:
     json.dump(filtered_words, outfile)
   print(filtered_words)
