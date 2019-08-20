@@ -40,7 +40,7 @@ def main():
     labels = checkpoint['labels']
     
     # write
-    for seed in range(0, 3):
+    for seed in range(0, 16):
       print("  seed %d ..."%seed)
       points_for_seed = project_umap(points, seed=seed)
       if not os.path.exists('static/umaps/%d'%seed):

@@ -64,7 +64,7 @@ body {
   padding-top: 0px
 }
 
-#diagram {
+#diagram.before_hacking {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,4 +266,8 @@ mark {
 
 svg {
   border: 1px solid #eee;
+}
+
+.projection-container {
+  display: inline-block;
 }

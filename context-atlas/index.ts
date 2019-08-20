@@ -124,7 +124,8 @@ export class BertVis {
     });
 
     // Also start out with infotext closed, if on mobile.
-    if (util.isMobile()) {
+    const isSmallMultiples = true;
+    if (util.isMobile() || isSmallMultiples) {
       closed = true;
       infoText.classed('closed', true);
     }
@@ -175,7 +176,14 @@ export class BertVis {
     this.setLoadingState(rootEl);
     this.word = word;
 
-    const seeds = [0, 1, 2];
+    // dummy, for menu
+    // const dummyEl = document.createElement('div');
+    // dummyEl.style.display = 'inline-block';
+    // dummyEl.style.width = '300px';
+    // dummyEl.style.height = '300px';
+    // rootEl.appendChild(dummyEl);
+
+    const seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
     for (var i = 0; i < seeds.length; i++) {
       const seed = seeds[i];
       const url = `umaps/${seed}/${word}.json`;
@@ -190,6 +198,7 @@ export class BertVis {
 
       // render
       const el = document.createElement('div');
+      el.classList.add('projection-container');
       rootEl.appendChild(el);
       this.makeDiagramUMAP(el, dimensions);
       this.makeDescLabelsFromScratch(el, dimensions);
