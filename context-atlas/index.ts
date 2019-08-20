@@ -56,23 +56,23 @@ interface KNN {
   labels: SentData[];
 }
 
-export class Projection {
-  // Height and width of the display.
-  private rightOffset = 200;
-  private width = window.innerWidth;
-  private height = window.innerHeight;
+// export class Projection {
+//   // Height and width of the display.
+//   private rightOffset = 200;
+//   private width = window.innerWidth;
+//   private height = window.innerHeight;
 
-  // D3 selections of svg objects.
-  private dotsSVG: d3.Selection<SVGCircleElement, Point, SVGSVGElement, {}>;
-  private labelsSVG: d3.Selection<SVGTextElement, Label, d3.BaseType, {}>;
+//   // D3 selections of svg objects.
+//   private dotsSVG: d3.Selection<SVGCircleElement, Point, SVGSVGElement, {}>;
+//   private labelsSVG: d3.Selection<SVGTextElement, Label, d3.BaseType, {}>;
 
-  // Information about the points and their locations.
-  private labels: Label[];
-  private labelWordCoords: {[word: string]: number[]};
-  private data: Point[];
-  private posKeys: string[] = SimplePOS.map((pos: POSTag) => pos.tag);
+//   // Information about the points and their locations.
+//   private labels: Label[];
+//   private labelWordCoords: {[word: string]: number[]};
+//   private data: Point[];
+//   private posKeys: string[] = SimplePOS.map((pos: POSTag) => pos.tag);
 
-}
+// }
 
 export class BertVis {
   // UI elements.
@@ -171,30 +171,39 @@ export class BertVis {
    * @param word Word to get sentences with.
    */
   private async getData(word: string) {
-    this.setLoadingState();
+    const rootEl = document.querySelector('#diagram');  
+    this.setLoadingState(rootEl);
     this.word = word;
-    const url = `umaps/${this.umapSeed}/${word}.json`;
-    const errorMessage =
-        'Whoops! An error occurred. If you entered a word, it may not be in the dictionary.';
-    const res = await util.loadJson(url, errorMessage) as KNN;
-    // util.setURLWord(word);
 
-    const dimensions = [300, 300, 0];
-    this.data = this.convertServerResponseToPoints(res, dimensions);
-    this.makeDiagramUMAP(dimensions);
-    this.makeDescLabelsFromScratch(dimensions);
-    this.refresh();
+    const seeds = [0, 1, 2];
+    for (var i = 0; i < seeds.length; i++) {
+      const seed = seeds[i];
+      const url = `umaps/${seed}/${word}.json`;
+      const errorMessage =
+          'Whoops! An error occurred. If you entered a word, it may not be in the dictionary.';
+      const res = await util.loadJson(url, errorMessage) as KNN;
+      // util.setURLWord(word);
+
+      // calculate
+      const dimensions = [300, 300, 0];
+      this.data = this.convertServerResponseToPoints(res, dimensions);
+
+      // render
+      const el = document.createElement('div');
+      rootEl.appendChild(el);
+      this.makeDiagramUMAP(el, dimensions);
+      this.makeDescLabelsFromScratch(el, dimensions);
+      this.refresh();
+    }
   }
 
+  // Change data shape, scale to dimensions.
   private function convertServerResponseToPoints(res, dimensions) {
     const [width, height, rightOffset] = dimensions;
-    console.log('width, height, rightOffset', width, height, rightOffset);
     res.data = util.centerFrame(res.data, width, height, rightOffset);
-    console.log('res.data[0]', res.data[0]);
 
     // Transpose the data to be by point rather than by layer.
     const coordsByPoint = util.transpose(res.data);
-    console.log('coordsByPoint', coordsByPoint);
 
     // Make an object for each point.
     let points = [];
@@ -220,10 +229,10 @@ export class BertVis {
    * figuring out which could be descriptions, and filtering out those that
    * should be shown at this zoom level.
    */
-  private makeDescLabelsFromScratch(dimensions) {
+  private makeDescLabelsFromScratch(el, dimensions) {
     this.labelWordCoords = util.getAllWordsInLabels(this.data, this.word);
     this.determineDescriptionLabels(dimensions);
-    this.showDescriptionLabels();
+    this.showDescriptionLabels(el);
   }
 
   private async determineDescriptionLabels(dimensions) {
@@ -320,9 +329,9 @@ export class BertVis {
   /**
    * Sets the visibility (in logic, not UI) of the overlappign labels.
    */
-  private hideOverlappingLabels() {
+  private hideOverlappingLabels(el) {
     this.resetDotColors();
-    const svg = d3.select('#diagram svg');
+    const svg = d3.select(el).select('svg');
     svg.selectAll('text').remove();
     const svgNode = svg.node() as SVGSVGElement;
 
@@ -359,8 +368,8 @@ export class BertVis {
   /**
    * Show the large labels.
    */
-  private showDescriptionLabels() {
-    this.hideOverlappingLabels();
+  private showDescriptionLabels(el) {
+    this.hideOverlappingLabels(el);
 
     // Color the dots with their label colors.
     this.labels.forEach((wordObj: any) => {
@@ -370,7 +379,7 @@ export class BertVis {
     });
 
     // Actually add all the words.
-    const svg = d3.select('#diagram svg');
+    const svg = d3.select(el).select('svg');
     this.labelsSVG =
         svg.selectAll('text').data(this.labels).enter().append('text');
 
@@ -459,10 +468,10 @@ export class BertVis {
    * Make the literal diagram of points.
    * @param layer layer of embeddings to use.
    */
-  private makeDiagramUMAP(dimensions) {
+  private makeDiagramUMAP(el, dimensions) {
     const [width, height] = dimensions;
-    this.setDefaultState();
-    const svg = d3.select('#diagram')
+    this.setDefaultState(el);
+    const svg = d3.select(el)
                     .append('svg')
                     .attr('width', width)
                     .attr('height', height)
@@ -472,21 +481,21 @@ export class BertVis {
                           this.transform.k != d3.event.transform.k;
                       this.transform = d3.event.transform;
                       if (zoomChanged) {
-                        this.showDescriptionLabels();
+                        this.showDescriptionLabels(el);
                         this.refresh();
                       }
                       this.pointLocationsChanged();
                     }));
-    this.addDots(svg);
+    this.addDots(el, svg);
     this.refresh();
   }
 
   /**
    * Add the dots and their labels to the svg image.
    */
-  private addDots(parentSVG:
+  private addDots(el, parentSVG:
                       d3.Selection<SVGSVGElement, {}, HTMLElement, any>) {
-    const ttSel = d3.select('#diagram')
+    const ttSel = d3.select(el)
                       .append('div')
                       .attr('class', 'tooltip tooltip-hidden');
     ttSel.on('click', () => {});
@@ -592,7 +601,7 @@ export class BertVis {
     this.resetDotColors();
     this.resetTransform();
     // this.determineDescriptionLabels(dimensions); TODO
-    this.showDescriptionLabels();
+    // this.showDescriptionLabels(el); TODO
     this.refresh();
     this.pointLocationsChanged(true);
   }
@@ -601,7 +610,7 @@ export class BertVis {
     this.transform = d3.zoomIdentity;
   }
 
-  private setLoadingState() {
+  private setLoadingState(el) {
     // Delete the current data
     this.data = null;
 
@@ -612,7 +621,7 @@ export class BertVis {
     this.resetTransform();
 
     // Clear the parent element.
-    const parentElt = d3.select('#diagram');
+    const parentElt = d3.select(el);
     parentElt.selectAll('*').remove();
 
     // Disable the button
@@ -629,9 +638,9 @@ export class BertVis {
     componentHandler.upgradeDom()
   }
 
-  private setDefaultState() {
+  private setDefaultState(el) {
     // Clear the loading div.
-    d3.select('#diagram').selectAll('*').remove();
+    d3.select('#loading').remove();
     d3.select('#toggles').classed('hidden', false);
   }
 }
