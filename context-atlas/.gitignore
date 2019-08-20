@@ -11,6 +11,8 @@ variables
 # keep folder for scripts, but not most contents
 static/*.*
 static/jsons/*.json
+static/embeddings/*.json
+static/umaps/*/*.json
 !static/filtered_words.json
 !static/words.json
 

@@ -262,3 +262,8 @@ mark {
   padding-left: 2px;
   padding-right: 2px;
 }
+
+
+svg {
+  border: 1px solid #eee;
+}

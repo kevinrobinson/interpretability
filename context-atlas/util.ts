@@ -217,6 +217,12 @@ export function getURLWord() {
   return urlParams.get('word');
 }
 
+export function getUmapSeed() {
+  const urlParams = new URLSearchParams(window.location.hash.substring(1));
+  console.log('urlParams');
+  return urlParams.get('umap_seed') || 0;
+}
+
 /**
  * Set the URL word parameter.
  */

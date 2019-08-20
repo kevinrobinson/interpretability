@@ -56,16 +56,11 @@ interface KNN {
   labels: SentData[];
 }
 
-export class BertVis {
+export class Projection {
   // Height and width of the display.
   private rightOffset = 200;
   private width = window.innerWidth;
   private height = window.innerHeight;
-
-  // UI elements.
-  private layerDropdown = d3.select('#dropdown');
-  private posSwitch = d3.select('#pos-switch');
-  private posLegend = d3.select('#legend');
 
   // D3 selections of svg objects.
   private dotsSVG: d3.Selection<SVGCircleElement, Point, SVGSVGElement, {}>;
@@ -77,18 +72,28 @@ export class BertVis {
   private data: Point[];
   private posKeys: string[] = SimplePOS.map((pos: POSTag) => pos.tag);
 
+}
+
+export class BertVis {
+  // UI elements.
+  private layerDropdown = d3.select('#dropdown');
+  private posSwitch = d3.select('#pos-switch');
+  private posLegend = d3.select('#legend');
+
   // State variables.
   private word: string;
   private transform: d3.ZoomTransform;
   private showPOS: boolean;
   private currLayer = 11;
   private subsearchWord: string;
+  private umapSeed: string;
 
   constructor() {}
   async start() {
     this.addHandlers();
     await this.loadWords();
     const urlWord = util.getURLWord();
+    this.umapSeed = util.getUmapSeed(); // TODO
     this.getData(urlWord ? urlWord : 'lie');
     util.polyfillCheckIntersection();
   }
@@ -98,7 +103,7 @@ export class BertVis {
     this.layerDropdown.on('change', () => {
       const layer = (this.layerDropdown.node() as HTMLInputElement).value;
       if (this.data != null) {
-        this.updateLayer(parseInt(layer));
+        this.updateLayer(dimensions, parseInt(layer));
       }
     });
 
@@ -168,20 +173,31 @@ export class BertVis {
   private async getData(word: string) {
     this.setLoadingState();
     this.word = word;
-    const url = `jsons/${word}.json`;
+    const url = `umaps/${this.umapSeed}/${word}.json`;
     const errorMessage =
         'Whoops! An error occurred. If you entered a word, it may not be in the dictionary.';
     const res = await util.loadJson(url, errorMessage) as KNN;
-    util.setURLWord(word);
-    this.data = [];
+    // util.setURLWord(word);
 
-    res.data =
-        util.centerFrame(res.data, this.width, this.height, this.rightOffset);
+    const dimensions = [300, 300, 0];
+    this.data = this.convertServerResponseToPoints(res, dimensions);
+    this.makeDiagramUMAP(dimensions);
+    this.makeDescLabelsFromScratch(dimensions);
+    this.refresh();
+  }
+
+  private function convertServerResponseToPoints(res, dimensions) {
+    const [width, height, rightOffset] = dimensions;
+    console.log('width, height, rightOffset', width, height, rightOffset);
+    res.data = util.centerFrame(res.data, width, height, rightOffset);
+    console.log('res.data[0]', res.data[0]);
 
     // Transpose the data to be by point rather than by layer.
     const coordsByPoint = util.transpose(res.data);
+    console.log('coordsByPoint', coordsByPoint);
 
     // Make an object for each point.
+    let points = [];
     for (let i = 0; i < res.labels.length; i++) {
       let sentenceLabel = res.labels[i].sentence;
 
@@ -193,12 +209,10 @@ export class BertVis {
       const isSelected = false;
       const currLabelWord = '';
       const point = {sentenceLabel, coords, isSelected, pos, currLabelWord};
-      this.data.push(point);
+      points.push(point);
     }
 
-    this.makeDiagramUMAP();
-    this.makeDescLabelsFromScratch();
-    this.refresh();
+    return points;
   }
 
   /**
@@ -206,13 +220,14 @@ export class BertVis {
    * figuring out which could be descriptions, and filtering out those that
    * should be shown at this zoom level.
    */
-  private makeDescLabelsFromScratch() {
+  private makeDescLabelsFromScratch(dimensions) {
     this.labelWordCoords = util.getAllWordsInLabels(this.data, this.word);
-    this.determineDescriptionLabels();
+    this.determineDescriptionLabels(dimensions);
     this.showDescriptionLabels();
   }
 
-  private async determineDescriptionLabels() {
+  private async determineDescriptionLabels(dimensions) {
+    const [width] = dimensions;
     // Add a dropdown to search within the sentences.
     const callback = (word: string) => {
       this.subsearchWord = word;
@@ -240,7 +255,7 @@ export class BertVis {
         // This is basically getting the median (ish) interpoint distance, and
         // seeing if it's below a threshold.
         let visible, spread;
-        const maxSpread = this.width / 20;
+        const maxSpread = width / 20;
         if (count < 20) {
           const cutoffPoint = sortedIntraPtDists.length * 1 / 2;
           spread = sortedIntraPtDists[Math.floor(cutoffPoint)];
@@ -444,12 +459,13 @@ export class BertVis {
    * Make the literal diagram of points.
    * @param layer layer of embeddings to use.
    */
-  private makeDiagramUMAP() {
+  private makeDiagramUMAP(dimensions) {
+    const [width, height] = dimensions;
     this.setDefaultState();
     const svg = d3.select('#diagram')
                     .append('svg')
-                    .attr('width', this.width)
-                    .attr('height', this.height)
+                    .attr('width', width)
+                    .attr('height', height)
                     .style('pointer-events', 'all')
                     .call(d3.zoom().scaleExtent([1 / 32, 4]).on('zoom', () => {
                       const zoomChanged =
@@ -575,7 +591,7 @@ export class BertVis {
     this.currLayer = layer;
     this.resetDotColors();
     this.resetTransform();
-    this.determineDescriptionLabels();
+    // this.determineDescriptionLabels(dimensions); TODO
     this.showDescriptionLabels();
     this.refresh();
     this.pointLocationsChanged(true);

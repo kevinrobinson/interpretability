@@ -80,10 +80,10 @@ def project_umap(points, seed=RANDOM_SEED):
     points_transformed.append(transformed)
   return points_transformed
 
-def get_embeddings(word, sentences, layers_back=12):
+def get_embeddings(word, sentences):
   """Get the embedding for a word in each sentence."""
   # Tokenized input
-  layers = range(-1 * layers_back, 0)
+  layers = range(-12, 0)
   points = [[] for layer in layers]
   print('Getting embeddings for %d sentences'%len(sentences))
   for sentence in sentences:
@@ -225,7 +225,12 @@ if __name__ == '__main__':
     if (len(sentences_w_word) > 100):
       print('starting process for word : %s'%word)
       locs_and_data = neighbors(word, sentences_w_word)
+      with open('static/embeddings/%s.json'%word, 'w') as outfile:
+        points = locs_and_data['points']
+        labels = locs_and_data['labels']
+        json.dump({'labels': labels, 'points': points}, outfile)
       with open('static/jsons/%s.json'%word, 'w') as outfile:
+        del locs_and_data['points']
         json.dump(locs_and_data, outfile)
 
   print("Found %d sentences_w_word"%len(sentences_w_word))
@@ -234,7 +239,7 @@ if __name__ == '__main__':
   # Store an updated json with the filtered words.
   filtered_words = []
   for word in os.listdir('static/jsons'):
-    word = word.split('.')[0]
+    word = word.split('/')[-1].split('.')[0]
     filtered_words.append(word)
 
   print("Wrote preprocessed files for %d filtered_words"%len(filtered_words))
