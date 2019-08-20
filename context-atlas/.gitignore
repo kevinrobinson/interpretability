@@ -16,5 +16,11 @@ static/umaps/*/*.json
 !static/filtered_words.json
 !static/words.json
 
+# 100k archive
+static/100k/*.*
+static/100k/jsons/*.json
+static/100k/embeddings/*.json
+static/100k/umaps/*/*.json
+
 # too big for source
 enwiki-20170820.db

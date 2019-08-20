@@ -186,7 +186,7 @@ export class BertVis {
     const seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
     for (var i = 0; i < seeds.length; i++) {
       const seed = seeds[i];
-      const url = `umaps/${seed}/${word}.json`;
+      const url = `100k/umaps/${seed}/${word}.json`;
       const errorMessage =
           'Whoops! An error occurred. If you entered a word, it may not be in the dictionary.';
       const res = await util.loadJson(url, errorMessage) as KNN;
