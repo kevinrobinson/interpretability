@@ -13,6 +13,12 @@ static/*.*
 static/jsons/*.json
 static/embeddings/*.json
 static/umaps/*/*.json
+static/clusters/*/*.json
+static/clusters_on_umap/*/*.json
+static/defaults_clusters_on_umap/*/*.json
+static/clusters_across_kmeans_seeds/*/*.json
+static/five_clusters_in_umap/*/*.json
+
 !static/filtered_words.json
 !static/words.json
 
@@ -21,6 +27,11 @@ static/100k/*.*
 static/100k/jsons/*.json
 static/100k/embeddings/*.json
 static/100k/umaps/*/*.json
+static/100k/clusters/*/*.json
+static/100k/clusters_on_umap/*/*.json
+static/100k/defaults_clusters_on_umap/*/*.json
+static/100k/clusters_across_kmeans_seeds/*/*.json
+static/100k/five_clusters_in_umap/*/*.json
 
 # too big for source
 enwiki-20170820.db

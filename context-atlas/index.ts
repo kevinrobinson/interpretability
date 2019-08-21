@@ -186,7 +186,27 @@ export class BertVis {
     const seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
     for (var i = 0; i < seeds.length; i++) {
       const seed = seeds[i];
-      const url = `100k/umaps/${seed}/${word}.json`;
+
+      // across umap seeds
+      // const url = `100k/umaps/${seed}/${word}.json`;
+
+      // kmeans default clusters, across seeds
+      // const url = `100k/clusters_across_kmeans_seeds/${seed}/${word}.json`;
+
+      // kmeans default clusters in umap space, across seed
+      // const url = `100k/defaults_clusters_on_umap/${seed}/${word}.json`;
+
+      // kmeans with fixed n_clusters in umap space, across umap seeds
+      // with random kmeans seeds
+      // n_clusters=5 for 'fair)'
+      const url = `100k/five_clusters_in_umap/${seed}/${word}.json`;
+
+      // kmeans, across n_clusters (not seeds)
+      // const url = `100k/clusters/${seed}/${word}.json`;
+
+      // kmeans in umap space, across n_clusters (not seed)
+      // const url = `100k/clusters_on_umap/${seed}/${word}.json`;
+      
       const errorMessage =
           'Whoops! An error occurred. If you entered a word, it may not be in the dictionary.';
       const res = await util.loadJson(url, errorMessage) as KNN;
